@@ -75,6 +75,11 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
             document.getElementById("uploadStatus").innerHTML = `
                 ✅ File Uploaded: <a href="${result.file_url}" target="_blank">${result.file_url}</a>
             `;
+
+            // Save file in localStorage
+            const files = JSON.parse(localStorage.getItem("uploadedFiles") || "[]");
+            files.push({ name: formData.get("file").name, url: result.file_url });
+            localStorage.setItem("uploadedFiles", JSON.stringify(files));
         } else {
             document.getElementById("uploadStatus").innerHTML = `❌ Error: ${result.error}`;
         }
@@ -86,5 +91,6 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
     button.disabled = false;
 });
 </script>
+
 </body>
 </html>
