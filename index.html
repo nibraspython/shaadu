@@ -68,7 +68,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>OGGY Hosting - Vercel</h1>
+        <h1>PHP Hosting - Vercel</h1>
         <form id="uploadForm" enctype="multipart/form-data">
             <label style="color: #CD7F32;">Select File:</label>
             <input type="file" name="file" required><br>
@@ -87,22 +87,16 @@
         document.getElementById("uploadForm").addEventListener("submit", async function (e) {
             e.preventDefault();
             const formData = new FormData(this);
-            document.getElementById("uploadStatus").innerHTML = "⏳ Uploading...";
 
-            try {
-                const response = await fetch("/api/upload", { // Fixed endpoint for Vercel
-                    method: "POST",
-                    body: formData,
-                });
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
 
-                const result = await response.json();
-                document.getElementById("uploadStatus").innerHTML = result.success
-                    ? `<p>✅ File Uploaded: <a href="${result.file_url}" target="_blank">${result.file_url}</a></p>
-                       <p>🌐 Telegram Webhook: <a href="${result.webhook_url}" target="_blank">${result.webhook_url}</a></p>`
-                    : `<p style="color: red;">❌ Error: ${result.error}</p>`;
-            } catch (error) {
-                document.getElementById("uploadStatus").innerHTML = `<p style="color: red;">❌ Upload Failed. Please try again.</p>`;
-            }
+            const result = await response.json();
+            document.getElementById("uploadStatus").innerHTML = result.success
+                ? `<p>✅ File Uploaded: <a href="myfile.html?file=${encodeURIComponent(result.file_url)}" target="_blank">${result.file_url}</a></p>`
+                : `<p style="color: red;">❌ Error: ${result.error}</p>`;
         });
     </script>
 </body>
