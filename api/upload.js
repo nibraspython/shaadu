@@ -1,34 +1,40 @@
-const fetch = require("node-fetch");
-const FormData = require("form-data");
-const multer = require("multer");
 const express = require("express");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
-const upload = multer();
+const upload = multer({ dest: "/tmp/" }); // Save files temporarily
 
-app.post("/api/upload", upload.single("file"), async (req, res) => {
+app.post("/api/upload", upload.single("file"), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, error: "No file uploaded" });
     }
 
-    // Upload file to File.io
-    const formData = new FormData();
-    formData.append("file", req.file.buffer, req.file.originalname);
+    // Rename file to match original filename
+    const tempPath = req.file.path;
+    const newPath = `/tmp/${req.file.originalname}`;
 
-    try {
-        const response = await fetch("https://file.io", {
-            method: "POST",
-            body: formData,
-        });
-
-        const result = await response.json();
-        if (result.success) {
-            res.json({ success: true, file_url: result.link });
-        } else {
-            res.status(500).json({ success: false, error: "Upload failed" });
+    fs.rename(tempPath, newPath, (err) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: "File rename failed" });
         }
-    } catch (error) {
-        res.status(500).json({ success: false, error: "Server error" });
+
+        // Temporary File URL (will be deleted when the instance restarts)
+        const fileUrl = `https://${req.headers.host}/api/file/${req.file.originalname}`;
+
+        res.json({ success: true, file_url: fileUrl });
+    });
+});
+
+// Serve the uploaded file temporarily
+app.get("/api/file/:filename", (req, res) => {
+    const filePath = `/tmp/${req.params.filename}`;
+
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ success: false, error: "File not found" });
     }
 });
 
