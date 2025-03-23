@@ -1,41 +1,41 @@
-const formidable = require("formidable");
+const express = require("express");
+const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
-module.exports = async (req, res) => {
-    if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method Not Allowed" });
+const app = express();
+const upload = multer({ dest: "uploads/" });
+
+const FILES_JSON = path.join(__dirname, "files.json");
+
+// Function to load existing files
+function loadFiles() {
+    if (fs.existsSync(FILES_JSON)) {
+        return JSON.parse(fs.readFileSync(FILES_JSON));
+    }
+    return [];
+}
+
+// Function to save files
+function saveFileData(data) {
+    fs.writeFileSync(FILES_JSON, JSON.stringify(data, null, 2));
+}
+
+// Upload API
+app.post("/api/upload", upload.single("file"), (req, res) => {
+    if (!req.file) {
+        return res.json({ success: false, error: "No file uploaded" });
     }
 
-    const form = new formidable.IncomingForm();
-    form.uploadDir = "/tmp"; // Required for Vercel
-    form.keepExtensions = true;
+    const fileUrl = `/uploads/${req.file.filename}-${req.file.originalname}`;
+    const files = loadFiles();
+    files.push({ name: req.file.originalname, url: fileUrl });
+    saveFileData(files);
 
-    form.parse(req, (err, fields, files) => {
-        if (err) {
-            console.error("Formidable Error:", err);
-            return res.status(500).json({ error: "Upload Failed" });
-        }
+    res.json({ success: true, file_url: fileUrl });
+});
 
-        const file = files.file;
-        if (!file || !file.filepath) {
-            return res.status(400).json({ error: "No file uploaded" });
-        }
+// Serve uploaded files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-        const filename = file.originalFilename || `file_${Date.now()}`;
-        const tempPath = file.filepath;
-        const newPath = path.join("/tmp", filename);
-
-        fs.rename(tempPath, newPath, (renameErr) => {
-            if (renameErr) {
-                console.error("File Rename Error:", renameErr);
-                return res.status(500).json({ error: "File Rename Failed" });
-            }
-
-            const fileUrl = `https://${req.headers.host}/api/uploads/${filename}`;
-            console.log("File uploaded successfully:", fileUrl);
-
-            return res.json({ success: true, file_url: fileUrl });
-        });
-    });
-};
+module.exports = app;
