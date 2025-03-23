@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uploaded File</title>
+    <title>Uploaded Files</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,39 +18,35 @@
             border: 2px solid #CD7F32;
             border-radius: 10px;
             box-shadow: 0 0 10px #CD7F32;
+            background: rgba(0, 0, 0, 0.8);
         }
-        .file-container {
+        .file-list {
             margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #CD7F32;
-            border-radius: 5px;
-            background: #222;
+            text-align: left;
         }
-        .file-container a {
+        .file-list a {
             color: #00ff00;
             text-decoration: none;
+            display: block;
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Uploaded File</h1>
-        <div class="file-container">
-            <p>✅ Your File:</p>
-            <a id="fileLink" href="#" target="_blank">View File</a>
-        </div>
+        <h1>Uploaded Files</h1>
+        <div class="file-list" id="fileList">Loading...</div>
     </div>
-
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileUrl = urlParams.get("file");
-
-        if (fileUrl) {
-            document.getElementById("fileLink").href = fileUrl;
-            document.getElementById("fileLink").innerText = fileUrl.split('/').pop();
-        } else {
-            document.querySelector(".file-container").innerHTML = "<p style='color: red;'>❌ No file found.</p>";
+        async function fetchFiles() {
+            const response = await fetch("/api/files.json");
+            const files = await response.json();
+            const fileList = document.getElementById("fileList");
+            fileList.innerHTML = files.length
+                ? files.map(f => `<a href="${f.url}" target="_blank">${f.name}</a>`).join("")
+                : "No files uploaded.";
         }
+        fetchFiles();
     </script>
 </body>
 </html>
