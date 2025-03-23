@@ -1,47 +1,38 @@
-const express = require("express");
-const multer = require("multer");
+const formidable = require("formidable");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 
-const app = express();
-const upload = multer({ dest: "/tmp/" });
-
-app.post("/api/upload", upload.single("file"), (req, res) => {
-    if (!req.file) {
-        console.error("❌ No file received.");
-        return res.status(400).json({ success: false, error: "No file uploaded" });
+module.exports = (req, res) => {
+    if (req.method !== "POST") {
+        return res.status(405).json({ success: false, error: "Method Not Allowed" });
     }
 
-    console.log("✅ File received:", req.file);
+    const form = new formidable.IncomingForm();
+    form.uploadDir = os.tmpdir(); // Temporary folder
+    form.keepExtensions = true;
 
-    // Rename and move file
-    const tempPath = req.file.path;
-    const newPath = `/tmp/${req.file.originalname}`;
-
-    fs.rename(tempPath, newPath, (err) => {
+    form.parse(req, (err, fields, files) => {
         if (err) {
-            console.error("❌ File rename failed:", err);
-            return res.status(500).json({ success: false, error: "File rename failed" });
+            return res.status(500).json({ success: false, error: "File upload error" });
         }
 
-        console.log("✅ File saved at:", newPath);
+        const file = files.file;
+        if (!file) {
+            return res.status(400).json({ success: false, error: "No file uploaded" });
+        }
 
-        const fileUrl = `https://${req.headers.host}/api/file/${req.file.originalname}`;
-        res.json({ success: true, file_url: fileUrl });
+        const fileName = file.originalFilename.replace(/\s+/g, "_");
+        const tempPath = file.filepath;
+        const newFilePath = path.join(os.tmpdir(), fileName);
+
+        fs.rename(tempPath, newFilePath, (err) => {
+            if (err) {
+                return res.status(500).json({ success: false, error: "File save error" });
+            }
+
+            const fileUrl = `https://${req.headers.host}/uploads/${fileName}`;
+            res.json({ success: true, file_url: fileUrl, file_name: fileName });
+        });
     });
-});
-
-// Serve temporary files
-app.get("/api/file/:filename", (req, res) => {
-    const filePath = `/tmp/${req.params.filename}`;
-
-    if (fs.existsSync(filePath)) {
-        console.log("✅ Serving file:", filePath);
-        res.sendFile(filePath);
-    } else {
-        console.error("❌ File not found:", filePath);
-        res.status(404).json({ success: false, error: "File not found" });
-    }
-});
-
-module.exports = app;
+};
