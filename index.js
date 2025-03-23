@@ -1,56 +1,55 @@
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Ensure the uploads directory exists
-const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Configure multer for memory storage (temporary upload)
+const upload = multer({ storage: multer.memoryStorage() });
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    },
-});
-
-const upload = multer({ storage });
-
-// Serve static files (for uploaded files)
-app.use("/uploads", express.static(uploadDir));
+// Serve static files (for frontend)
+app.use(express.static("public"));
 
 // Main HTML form
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
+    res.sendFile(__dirname + "/index.html");
 });
 
 // Handle file upload
-app.post("/upload", upload.single("file"), (req, res) => {
+app.post("/upload", upload.single("file"), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded!" });
     }
 
-    const botToken = req.body.bot_token;
-    const filePath = `/uploads/${req.file.filename}`;
-    const webhookUrl = botToken
-        ? `https://api.telegram.org/bot${botToken}/setWebhook?url=${req.protocol}://${req.get("host")}${filePath}`
-        : null;
+    try {
+        // Upload file to file.io (temporary file storage)
+        const fileData = req.file.buffer;
+        const fileName = req.file.originalname;
 
-    res.json({
-        success: true,
-        message: "File uploaded successfully!",
-        file_url: filePath,
-        file_type: req.file.mimetype,
-        webhook_url: webhookUrl,
-    });
+        const formData = new FormData();
+        formData.append("file", fileData, fileName);
+
+        const response = await fetch("https://file.io", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            return res.status(500).json({ error: "File upload failed!" });
+        }
+
+        res.json({
+            success: true,
+            message: "File uploaded successfully!",
+            file_url: result.link, // Temporary file URL
+            file_name: fileName,
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Upload failed. Try again!" });
+    }
 });
 
 // Start the server
