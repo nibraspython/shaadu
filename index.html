@@ -57,24 +57,35 @@
     </div>
 
     <script>
-        document.getElementById("uploadForm").addEventListener("submit", async function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
+document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-            const response = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-            });
+    const formData = new FormData(this);
+    const button = document.querySelector("button");
+    button.innerText = "Uploading...";
+    button.disabled = true;
 
-            const result = await response.json();
-            if (result.success) {
-                document.getElementById("uploadStatus").innerHTML = `
-                    ✅ Uploaded: <a href="myfile.html?file=${encodeURIComponent(result.file_url)}">${result.file_name}</a>
-                `;
-            } else {
-                document.getElementById("uploadStatus").innerHTML = `<p style="color: red;">❌ Error: ${result.error}</p>`;
-            }
+    try {
+        const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
         });
-    </script>
+
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById("uploadStatus").innerHTML = `
+                ✅ File Uploaded: <a href="${result.file_url}" target="_blank">${result.file_url}</a>
+            `;
+        } else {
+            document.getElementById("uploadStatus").innerHTML = `❌ Error: ${result.error}`;
+        }
+    } catch (error) {
+        document.getElementById("uploadStatus").innerHTML = `❌ Upload Failed. Try again.`;
+    }
+
+    button.innerText = "UPLOAD";
+    button.disabled = false;
+});
+</script>
 </body>
 </html>
