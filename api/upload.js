@@ -1,41 +1,34 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
+const fetch = require("node-fetch");
 
 const app = express();
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage: multer.memoryStorage() });
 
-const FILES_JSON = path.join(__dirname, "files.json");
-
-// Function to load existing files
-function loadFiles() {
-    if (fs.existsSync(FILES_JSON)) {
-        return JSON.parse(fs.readFileSync(FILES_JSON));
-    }
-    return [];
-}
-
-// Function to save files
-function saveFileData(data) {
-    fs.writeFileSync(FILES_JSON, JSON.stringify(data, null, 2));
-}
-
-// Upload API
-app.post("/api/upload", upload.single("file"), (req, res) => {
+app.post("/api/upload", upload.single("file"), async (req, res) => {
     if (!req.file) {
         return res.json({ success: false, error: "No file uploaded" });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}-${req.file.originalname}`;
-    const files = loadFiles();
-    files.push({ name: req.file.originalname, url: fileUrl });
-    saveFileData(files);
+    try {
+        const formData = new FormData();
+        formData.append("file", Buffer.from(req.file.buffer), req.file.originalname);
 
-    res.json({ success: true, file_url: fileUrl });
+        const response = await fetch("https://file.io", {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            return res.json({ success: true, file_url: result.link });
+        } else {
+            return res.json({ success: false, error: "Failed to upload to file.io" });
+        }
+    } catch (error) {
+        return res.json({ success: false, error: "Upload Error" });
+    }
 });
-
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 module.exports = app;
