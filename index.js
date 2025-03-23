@@ -1,11 +1,12 @@
 const express = require("express");
 const multer = require("multer");
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const fetch = require("node-fetch");
+const FormData = require("form-data");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configure multer for memory storage (temporary upload)
+// Configure multer for memory storage (no local file system needed)
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Serve static files (for frontend)
@@ -24,11 +25,8 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
     try {
         // Upload file to file.io (temporary file storage)
-        const fileData = req.file.buffer;
-        const fileName = req.file.originalname;
-
         const formData = new FormData();
-        formData.append("file", fileData, fileName);
+        formData.append("file", req.file.buffer, req.file.originalname);
 
         const response = await fetch("https://file.io", {
             method: "POST",
@@ -44,10 +42,11 @@ app.post("/upload", upload.single("file"), async (req, res) => {
         res.json({
             success: true,
             message: "File uploaded successfully!",
-            file_url: result.link, // Temporary file URL
-            file_name: fileName,
+            file_url: result.link,
+            file_name: req.file.originalname,
         });
     } catch (error) {
+        console.error("Upload Error:", error);
         res.status(500).json({ error: "Upload failed. Try again!" });
     }
 });
