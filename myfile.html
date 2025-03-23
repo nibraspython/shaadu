@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded File</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #00ff00;
+            background: black;
+            text-align: center;
+        }
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            border: 2px solid #CD7F32;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 20px #CD7F32;
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #CD7F32;
+        }
+        .file-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #CD7F32;
+            border-radius: 5px;
+            background: #222;
+            display: inline-block;
+        }
+        .file-container a {
+            color: #00ff00;
+            text-decoration: none;
+        }
+        .file-container a:hover {
+            text-decoration: underline;
+        }
+        .join-now {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            color: #fff;
+            background: #CD7F32;
+            text-decoration: none;
+            border-radius: 5px;
+            box-shadow: 0 0 10px #CD7F32;
+            transition: all 0.3s ease;
+        }
+        .join-now:hover {
+            background: #0056b3;
+            box-shadow: 0 0 20px #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Uploaded File</h1>
+        <div class="file-container">
+            <p>✅ Your File:</p>
+            <a id="fileLink" href="#" target="_blank">View File</a>
+        </div>
+        <br>
+        <a class="join-now" href="https://t.me/jerryfromrussian" target="_blank">Join our Channel</a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileUrl = urlParams.get("file");
+
+        if (fileUrl) {
+            document.getElementById("fileLink").href = fileUrl;
+            document.getElementById("fileLink").innerText = fileUrl;
+        } else {
+            document.querySelector(".file-container").innerHTML = "<p style='color: red;'>❌ No file found.</p>";
+        }
+    </script>
+</body>
+</html>
