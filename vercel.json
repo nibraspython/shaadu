@@ -1,9 +1,15 @@
 {
   "version": 2,
   "builds": [
-    { "src": "server.js", "use": "@vercel/node" }
+    {
+      "src": "api/upload.php",
+      "use": "@vercel/php"
+    }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "server.js" }
+    {
+      "src": "/api/upload",
+      "dest": "api/upload.php"
+    }
   ]
 }
