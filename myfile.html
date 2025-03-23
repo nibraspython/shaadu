@@ -39,8 +39,7 @@
     </div>
     <script>
         async function fetchFiles() {
-            const response = await fetch("/api/files.json");
-            const files = await response.json();
+            const files = JSON.parse(localStorage.getItem("uploadedFiles") || "[]");
             const fileList = document.getElementById("fileList");
             fileList.innerHTML = files.length
                 ? files.map(f => `<a href="${f.url}" target="_blank">${f.name}</a>`).join("")
