@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHP Hosting on Vercel</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #00ff00;
+            background: black;
+            text-align: center;
+        }
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            border: 2px solid #CD7F32;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 20px #CD7F32;
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #CD7F32;
+        }
+        input, button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 5px;
+        }
+        input {
+            width: 80%;
+            background: #222;
+            color: #fff;
+            border: 1px solid #CD7F32;
+        }
+        button {
+            background: #CD7F32;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>PHP Hosting on Vercel</h1>
+        <form id="uploadForm">
+            <label style="color: #CD7F32;">Select File:</label>
+            <input type="file" id="fileInput" required><br>
+            <button type="submit">UPLOAD</button>
+        </form>
+
+        <p id="statusMessage" class="info"></p>
+    </div>
+
+    <script>
+        document.getElementById("uploadForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            
+            const fileInput = document.getElementById("fileInput").files[0];
+            if (!fileInput) return alert("Please select a file!");
+
+            const formData = new FormData();
+            formData.append("file", fileInput);
+
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+            const statusMessage = document.getElementById("statusMessage");
+
+            if (result.status === "success") {
+                statusMessage.innerHTML = `✅ File Uploaded: <a href="${result.file_url}" target="_blank">${result.file_url}</a>`;
+            } else {
+                statusMessage.innerHTML = "❌ Upload failed. Try again.";
+            }
+        });
+    </script>
+
+</body>
+</html>
