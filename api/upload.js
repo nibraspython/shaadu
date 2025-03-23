@@ -1,34 +1,35 @@
-const fs = require("fs");
-const path = require("path");
+const fetch = require("node-fetch");
+const FormData = require("form-data");
 const multer = require("multer");
 const express = require("express");
 
 const app = express();
-const uploadDir = path.join(__dirname, "..", "public", "uploads");
+const upload = multer();
 
-// Ensure the upload directory exists
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure multer to save the file with its original name
-const storage = multer.diskStorage({
-    destination: uploadDir,
-    filename: (req, file, cb) => {
-        const safeFilename = file.originalname.replace(/\s+/g, "_"); // Replace spaces with underscores
-        cb(null, safeFilename);
-    },
-});
-
-const upload = multer({ storage });
-
-app.post("/api/upload", upload.single("file"), (req, res) => {
+app.post("/api/upload", upload.single("file"), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, error: "No file uploaded" });
     }
 
-    const fileUrl = `https://shaadu.vercel.app/uploads/${req.file.filename}`;
-    res.json({ success: true, file_url: fileUrl });
+    // Upload file to File.io
+    const formData = new FormData();
+    formData.append("file", req.file.buffer, req.file.originalname);
+
+    try {
+        const response = await fetch("https://file.io", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            res.json({ success: true, file_url: result.link });
+        } else {
+            res.status(500).json({ success: false, error: "Upload failed" });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Server error" });
+    }
 });
 
 module.exports = app;
