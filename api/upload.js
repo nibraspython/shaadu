@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
 
     form.parse(req, (err, fields, files) => {
         if (err) {
-            console.error("Formidable error:", err);
+            console.error("Formidable Error:", err);
             return res.status(500).json({ error: "Upload Failed" });
         }
 
@@ -28,11 +28,11 @@ module.exports = async (req, res) => {
 
         fs.rename(tempPath, newPath, (renameErr) => {
             if (renameErr) {
-                console.error("File rename error:", renameErr);
+                console.error("File Rename Error:", renameErr);
                 return res.status(500).json({ error: "File Rename Failed" });
             }
 
-            const fileUrl = `https://${req.headers.host}/uploads/${filename}`;
+            const fileUrl = `https://${req.headers.host}/api/uploads/${filename}`;
             console.log("File uploaded successfully:", fileUrl);
 
             return res.json({ success: true, file_url: fileUrl });
