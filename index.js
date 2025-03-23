@@ -6,25 +6,24 @@ const FormData = require("form-data");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configure multer for memory storage (no local file system needed)
+// Configure multer to store files in memory
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Serve static files (for frontend)
-app.use(express.static("public"));
+app.use(express.static("public")); // Serve static files
 
-// Main HTML form
+// HTML Upload Page
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
-// Handle file upload
+// Handle File Upload & Store Temporarily
 app.post("/upload", upload.single("file"), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded!" });
     }
 
     try {
-        // Upload file to file.io (temporary file storage)
+        // Upload file to file.io (Temporary Storage)
         const formData = new FormData();
         formData.append("file", req.file.buffer, req.file.originalname);
 
@@ -41,8 +40,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
         res.json({
             success: true,
-            message: "File uploaded successfully!",
-            file_url: result.link,
+            file_url: result.link, // Temporary file link
             file_name: req.file.originalname,
         });
     } catch (error) {
@@ -51,7 +49,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     }
 });
 
-// Start the server
+// Start Server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
