@@ -8,11 +8,12 @@ module.exports = async (req, res) => {
     }
 
     const form = new formidable.IncomingForm();
-    form.uploadDir = "/tmp"; // Vercel only allows /tmp for file storage
+    form.uploadDir = "/tmp"; // Required for Vercel
     form.keepExtensions = true;
 
     form.parse(req, (err, fields, files) => {
         if (err) {
+            console.error("Formidable error:", err);
             return res.status(500).json({ error: "Upload Failed" });
         }
 
@@ -25,13 +26,15 @@ module.exports = async (req, res) => {
         const tempPath = file.filepath;
         const newPath = path.join("/tmp", filename);
 
-        // Rename the file to keep original name
         fs.rename(tempPath, newPath, (renameErr) => {
             if (renameErr) {
+                console.error("File rename error:", renameErr);
                 return res.status(500).json({ error: "File Rename Failed" });
             }
 
             const fileUrl = `https://${req.headers.host}/uploads/${filename}`;
+            console.log("File uploaded successfully:", fileUrl);
+
             return res.json({ success: true, file_url: fileUrl });
         });
     });
