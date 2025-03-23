@@ -1,38 +1,29 @@
-const formidable = require("formidable");
-const path = require("path");
+const { parse } = require("formidable");
 const fs = require("fs");
-const os = require("os");
+const path = require("path");
 
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
     if (req.method !== "POST") {
-        return res.status(405).json({ success: false, error: "Method Not Allowed" });
+        return res.status(405).json({ error: "Method Not Allowed" });
     }
 
-    const form = new formidable.IncomingForm();
-    form.uploadDir = os.tmpdir(); // Temporary folder
+    const form = new (require("formidable").IncomingForm)();
+    form.uploadDir = "/tmp"; // Vercel allows only /tmp for file storage
     form.keepExtensions = true;
 
     form.parse(req, (err, fields, files) => {
         if (err) {
-            return res.status(500).json({ success: false, error: "File upload error" });
+            return res.status(500).json({ error: "Upload Failed" });
         }
 
         const file = files.file;
         if (!file) {
-            return res.status(400).json({ success: false, error: "No file uploaded" });
+            return res.status(400).json({ error: "No file uploaded" });
         }
 
-        const fileName = file.originalFilename.replace(/\s+/g, "_");
-        const tempPath = file.filepath;
-        const newFilePath = path.join(os.tmpdir(), fileName);
+        const filename = path.basename(file.filepath);
+        const fileUrl = `https://${req.headers.host}/uploads/${filename}`;
 
-        fs.rename(tempPath, newFilePath, (err) => {
-            if (err) {
-                return res.status(500).json({ success: false, error: "File save error" });
-            }
-
-            const fileUrl = `https://${req.headers.host}/uploads/${fileName}`;
-            res.json({ success: true, file_url: fileUrl, file_name: fileName });
-        });
+        return res.json({ success: true, file_url: fileUrl });
     });
 };
