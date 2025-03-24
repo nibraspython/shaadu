@@ -8,7 +8,7 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Store uploaded files in memory
+// Store uploaded files
 const fileStorage = {};
 
 router.post("/", upload.single("file"), async (req, res) => {
@@ -20,19 +20,39 @@ router.post("/", upload.single("file"), async (req, res) => {
         const formData = new FormData();
         formData.append("file", req.file.buffer, req.file.originalname);
 
-        const response = await fetch("https://store1.gofile.io/upload", {
+        // Fetch GoFile API Server List
+        const serverResponse = await fetch("https://api.gofile.io/getServer");
+        const serverData = await serverResponse.json();
+
+        if (!serverData.data || !serverData.data.server) {
+            return res.status(500).json({ error: "Failed to get GoFile server!" });
+        }
+
+        const server = serverData.data.server;
+        const uploadUrl = `https://${server}.gofile.io/uploadFile`;
+
+        // Upload File to GoFile
+        const response = await fetch(uploadUrl, {
             method: "POST",
             body: formData,
         });
 
-        const result = await response.json();
+        const resultText = await response.text(); // Get raw response
+        let result;
 
-        if (!result.status || result.status !== "ok") {
+        try {
+            result = JSON.parse(resultText); // Try parsing as JSON
+        } catch (e) {
+            console.error("Invalid JSON response:", resultText);
+            return res.status(500).json({ error: "Unexpected response from GoFile.io" });
+        }
+
+        if (!result.data || !result.data.downloadPage) {
             console.error("GoFile Error:", result);
             return res.status(500).json({ error: "Upload failed on GoFile.io!" });
         }
 
-        // Store the file reference
+        // Store file reference
         const fileUrl = result.data.downloadPage;
         fileStorage[req.file.originalname] = fileUrl;
 
