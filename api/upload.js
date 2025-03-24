@@ -6,7 +6,7 @@ const FormData = require("form-data");
 const app = express();
 const router = express.Router();
 
-// Memory storage (avoids file system issues)
+// Store uploaded files in memory
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post("/", upload.single("file"), async (req, res) => {
@@ -18,22 +18,22 @@ router.post("/", upload.single("file"), async (req, res) => {
         const formData = new FormData();
         formData.append("file", req.file.buffer, req.file.originalname);
 
-        // Upload to file.io (temporary file storage)
-        const response = await fetch("https://file.io/", {
+        // Upload to GoFile.io (alternative to file.io)
+        const response = await fetch("https://store1.gofile.io/uploadFile", {
             method: "POST",
             body: formData,
         });
 
         const result = await response.json();
 
-        if (!result.success || !result.link) {
-            console.error("File.io Error:", result);
-            return res.status(500).json({ error: "Upload failed on file.io!" });
+        if (result.status !== "ok" || !result.data.downloadPage) {
+            console.error("GoFile Error:", result);
+            return res.status(500).json({ error: "Upload failed on GoFile.io!" });
         }
 
         res.json({
             success: true,
-            file_url: result.link,
+            file_url: result.data.downloadPage,
             file_name: req.file.originalname,
         });
     } catch (error) {
