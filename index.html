@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jerry Upload</title>
+    <title>File Upload</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -48,49 +48,48 @@
 </head>
 <body>
     <div class="container">
-        <h1>Oggy Upload</h1>
+        <h1>File Upload</h1>
         <form id="uploadForm" enctype="multipart/form-data">
             <input type="file" name="file" required>
             <button type="submit">UPLOAD</button>
         </form>
         <div class="uploaded-file" id="uploadStatus"></div>
+        <h2>Uploaded Files:</h2>
+        <div id="fileList"></div>
     </div>
+
     <script>
-document.getElementById("uploadForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
+        document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
 
-    const formData = new FormData(this);
-    const button = document.querySelector("button");
-    button.innerText = "Uploading...";
-    button.disabled = true;
+            const formData = new FormData(this);
+            const button = document.querySelector("button");
+            button.innerText = "Uploading...";
+            button.disabled = true;
 
-    try {
-        const response = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
+            try {
+                const response = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById("uploadStatus").innerHTML = `✅ Uploaded: <a href="${result.file_url}" target="_blank">${result.file_name}</a>`;
+
+                    // Append to file list
+                    const fileList = document.getElementById("fileList");
+                    fileList.innerHTML += `<p><a href="${result.file_url}" target="_blank">${result.file_name}</a></p>`;
+                } else {
+                    document.getElementById("uploadStatus").innerHTML = `❌ Error: ${result.error}`;
+                }
+            } catch (error) {
+                document.getElementById("uploadStatus").innerHTML = `❌ Upload Failed. Try again.`;
+            }
+
+            button.innerText = "UPLOAD";
+            button.disabled = false;
         });
-
-        const result = await response.json();
-        if (result.success) {
-            document.getElementById("uploadStatus").innerHTML = `
-                ✅ File Uploaded: <a href="${result.file_url}" target="_blank">${result.file_url}</a>
-            `;
-
-            // Save file in localStorage
-            const files = JSON.parse(localStorage.getItem("uploadedFiles") || "[]");
-            files.push({ name: formData.get("file").name, url: result.file_url });
-            localStorage.setItem("uploadedFiles", JSON.stringify(files));
-        } else {
-            document.getElementById("uploadStatus").innerHTML = `❌ Error: ${result.error}`;
-        }
-    } catch (error) {
-        document.getElementById("uploadStatus").innerHTML = `❌ Upload Failed. Try again.`;
-    }
-
-    button.innerText = "UPLOAD";
-    button.disabled = false;
-});
-</script>
-
+    </script>
 </body>
 </html>
