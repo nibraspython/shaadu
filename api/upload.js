@@ -1,34 +1,47 @@
 const express = require("express");
 const multer = require("multer");
 const fetch = require("node-fetch");
+const FormData = require("form-data");
 
 const app = express();
+const router = express.Router();
+
+// Use memory storage (no disk storage)
 const upload = multer({ storage: multer.memoryStorage() });
 
-app.post("/api/upload", upload.single("file"), async (req, res) => {
+// Upload endpoint
+router.post("/", upload.single("file"), async (req, res) => {
     if (!req.file) {
-        return res.json({ success: false, error: "No file uploaded" });
+        return res.status(400).json({ error: "No file uploaded!" });
     }
 
     try {
         const formData = new FormData();
-        formData.append("file", Buffer.from(req.file.buffer), req.file.originalname);
+        formData.append("file", req.file.buffer, req.file.originalname);
 
+        // Upload to file.io
         const response = await fetch("https://file.io", {
             method: "POST",
-            body: formData
+            body: formData,
         });
 
         const result = await response.json();
 
-        if (result.success) {
-            return res.json({ success: true, file_url: result.link });
-        } else {
-            return res.json({ success: false, error: "Failed to upload to file.io" });
+        if (!result.success) {
+            return res.status(500).json({ error: "File upload failed!" });
         }
+
+        res.json({
+            success: true,
+            file_url: result.link, // Temporary file link
+            file_name: req.file.originalname,
+        });
     } catch (error) {
-        return res.json({ success: false, error: "Upload Error" });
+        console.error("Upload Error:", error);
+        res.status(500).json({ error: "Upload failed. Try again!" });
     }
 });
+
+app.use("/api/upload", router);
 
 module.exports = app;
