@@ -6,10 +6,8 @@ const FormData = require("form-data");
 const app = express();
 const router = express.Router();
 
+// Store uploaded files in memory
 const upload = multer({ storage: multer.memoryStorage() });
-
-// Store uploaded file URLs
-const fileDatabase = {};
 
 router.post("/", upload.single("file"), async (req, res) => {
     if (!req.file) {
@@ -20,33 +18,23 @@ router.post("/", upload.single("file"), async (req, res) => {
         const formData = new FormData();
         formData.append("file", req.file.buffer, req.file.originalname);
 
-        // Upload to GoFile
-        const serverRes = await fetch("https://api.gofile.io/getServer");
-        const { data } = await serverRes.json();
-        const gofileServer = data.server;
-
-        const uploadRes = await fetch(`https://${gofileServer}.gofile.io/upload`, {
+        // Upload to GoFile.io (alternative to file.io)
+        const response = await fetch("https://store1.gofile.io/uploadFile", {
             method: "POST",
             body: formData,
         });
 
-        const uploadResult = await uploadRes.json();
+        const result = await response.json();
 
-        if (!uploadResult.data || !uploadResult.data.downloadPage) {
-            console.error("GoFile Upload Error:", uploadResult);
-            return res.status(500).json({ error: "Upload failed on GoFile!" });
+        if (result.status !== "ok" || !result.data.downloadPage) {
+            console.error("GoFile Error:", result);
+            return res.status(500).json({ error: "Upload failed on GoFile.io!" });
         }
-
-        const fileUrl = uploadResult.data.downloadPage;
-        const filename = req.file.originalname;
-
-        // Save filename + URL in memory (or DB)
-        fileDatabase[filename] = fileUrl;
 
         res.json({
             success: true,
-            file_url: `https://shaadu.vercel.app/uploads/${filename}`, // Custom URL
-            original_url: fileUrl, // Actual download link
+            file_url: result.data.downloadPage,
+            file_name: req.file.originalname,
         });
     } catch (error) {
         console.error("Upload Error:", error);
@@ -54,18 +42,6 @@ router.post("/", upload.single("file"), async (req, res) => {
     }
 });
 
-// Serve the file via custom URL
-router.get("/:filename", (req, res) => {
-    const filename = req.params.filename;
-
-    if (fileDatabase[filename]) {
-        return res.redirect(fileDatabase[filename]); // Redirect to actual file
-    } else {
-        return res.status(404).json({ error: "File not found!" });
-    }
-});
-
 app.use("/api/upload", router);
-app.use("/uploads", router);
 
 module.exports = app;
