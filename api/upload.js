@@ -20,20 +20,24 @@ router.post("/", upload.single("file"), async (req, res) => {
         const formData = new FormData();
         formData.append("file", req.file.buffer, req.file.originalname);
 
-        // Upload to File.io (or AnonFiles)
-        const response = await fetch("https://file.io/", {
+        // Upload to GoFile
+        const serverRes = await fetch("https://api.gofile.io/getServer");
+        const { data } = await serverRes.json();
+        const gofileServer = data.server;
+
+        const uploadRes = await fetch(`https://${gofileServer}.gofile.io/upload`, {
             method: "POST",
             body: formData,
         });
 
-        const result = await response.json();
+        const uploadResult = await uploadRes.json();
 
-        if (!result.success || !result.link) {
-            console.error("File.io Upload Error:", result);
-            return res.status(500).json({ error: "Upload failed on File.io!" });
+        if (!uploadResult.data || !uploadResult.data.downloadPage) {
+            console.error("GoFile Upload Error:", uploadResult);
+            return res.status(500).json({ error: "Upload failed on GoFile!" });
         }
 
-        const fileUrl = result.link;
+        const fileUrl = uploadResult.data.downloadPage;
         const filename = req.file.originalname;
 
         // Save filename + URL in memory (or DB)
