@@ -8,6 +8,9 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Store uploaded file URLs
+const fileDatabase = {};
+
 router.post("/", upload.single("file"), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded!" });
@@ -17,7 +20,7 @@ router.post("/", upload.single("file"), async (req, res) => {
         const formData = new FormData();
         formData.append("file", req.file.buffer, req.file.originalname);
 
-        // Upload to File.io
+        // Upload to File.io (or AnonFiles)
         const response = await fetch("https://file.io/", {
             method: "POST",
             body: formData,
@@ -31,10 +34,14 @@ router.post("/", upload.single("file"), async (req, res) => {
         }
 
         const fileUrl = result.link;
+        const filename = req.file.originalname;
+
+        // Save filename + URL in memory (or DB)
+        fileDatabase[filename] = fileUrl;
 
         res.json({
             success: true,
-            file_url: `/uploads/${req.file.originalname}`,
+            file_url: `https://shaadu.vercel.app/uploads/${filename}`, // Custom URL
             original_url: fileUrl, // Actual download link
         });
     } catch (error) {
@@ -43,9 +50,15 @@ router.post("/", upload.single("file"), async (req, res) => {
     }
 });
 
-// Custom URL Redirection
+// Serve the file via custom URL
 router.get("/:filename", (req, res) => {
-    return res.status(404).json({ error: "File not found!" });
+    const filename = req.params.filename;
+
+    if (fileDatabase[filename]) {
+        return res.redirect(fileDatabase[filename]); // Redirect to actual file
+    } else {
+        return res.status(404).json({ error: "File not found!" });
+    }
 });
 
 app.use("/api/upload", router);
