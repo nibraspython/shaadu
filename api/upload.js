@@ -18,22 +18,22 @@ router.post("/", upload.single("file"), async (req, res) => {
         const formData = new FormData();
         formData.append("file", req.file.buffer, req.file.originalname);
 
-        // Upload to GoFile.io (alternative to file.io)
-        const response = await fetch("https://store1.gofile.io/uploadFile", {
+        // Upload to AnonFiles (supports filename in URL)
+        const response = await fetch("https://api.anonfiles.com/upload", {
             method: "POST",
             body: formData,
         });
 
         const result = await response.json();
 
-        if (result.status !== "ok" || !result.data.downloadPage) {
-            console.error("GoFile Error:", result);
-            return res.status(500).json({ error: "Upload failed on GoFile.io!" });
+        if (!result.status || !result.data.file.url.short) {
+            console.error("AnonFiles Error:", result);
+            return res.status(500).json({ error: "Upload failed on AnonFiles!" });
         }
 
         res.json({
             success: true,
-            file_url: result.data.downloadPage,
+            file_url: result.data.file.url.short,  // Filename in the URL
             file_name: req.file.originalname,
         });
     } catch (error) {
